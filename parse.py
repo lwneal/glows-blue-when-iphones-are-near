@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 import sys
+import time
 import fileinput
 import subprocess
+
+WINDOW_LEN_SEC = 8
 
 def parse_oui_db():
     data = {}
@@ -28,8 +31,24 @@ def get_mfr(line):
         return 'Unknown {} {}'.format(org_unique_id, device_name)
 
 
-oui_map = parse_oui_db()
-while True:
-    line = sys.stdin.readline()
-    if len(line) > 8:
-        sys.stdout.write(get_mfr(line) + '\n')
+def add_ping(pings):
+    limit = time.time() - WINDOW_LEN_SEC
+    pings.append(time.time())
+    return [p for p in pings if limit < p]
+
+
+def calculate_blue_level(pings):
+    return len(pings)
+
+
+if __name__ == '__main__':
+    pings = []
+    oui_map = parse_oui_db()
+    while True:
+        line = sys.stdin.readline()
+        if len(line) > 8:
+            mfr = get_mfr(line)
+            if mfr.startswith('Apple'):
+                sys.stdout.write(mfr + '\n')
+                pings = add_ping(pings)
+                print('Blue level is {}'.format(calculate_blue_level(pings)))
